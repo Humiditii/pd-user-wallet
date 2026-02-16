@@ -17,7 +17,7 @@ export class UserController {
 
         const data = await this.userService.createUser(dto);
 
-        return res.status(HttpStatus.CREATED).json(this.success('User logged in successfully', HttpStatus.CREATED, data));
+        return res.status(HttpStatus.CREATED).json(this.success('User logged in successfully', HttpStatus.OK, data));
 
     }
 }
