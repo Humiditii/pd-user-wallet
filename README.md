@@ -64,3 +64,14 @@ This is a Node.js (NestJS) API implementation for an in-memory wallet system, fo
 - Query: `?page=1&limit=10`
 - Returns: Paginated transaction history (most recent first).
 
+## Testing
+
+Run unit tests:
+```bash
+npm run test
+```
+
+Run E2E tests:
+```bash
+npm run test:e2e
+```

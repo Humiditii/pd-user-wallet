@@ -9,3 +9,10 @@ export interface TransactionI {
     createdAt: Date
     idempotencyKey?: string // To track idempotent requests
 }
+
+export interface GetTransactionsResponseI {
+    transactions: TransactionI[];
+    count: number;
+    page: number;
+    limit: number;
+}

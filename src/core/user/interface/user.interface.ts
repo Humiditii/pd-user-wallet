@@ -6,3 +6,11 @@ export interface UserI {
     role: Role
     createdAt: Date
 }
+
+export interface CreateUserResponseI {
+    token: string;
+    user: {
+        id: string;
+        email: string;
+    }
+}

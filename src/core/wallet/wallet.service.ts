@@ -1,8 +1,7 @@
-import { Injectable, HttpStatus, BadRequestException } from '@nestjs/common';
+import { Injectable, BadRequestException, NotFoundException } from '@nestjs/common';
 import { WalletRepository } from './repository/wallet.repository';
-import { WalletI } from './interface/wallet.interface';
+import { WalletI, BalanceResponseI, MutationResponseI } from './interface/wallet.interface';
 import { TransactionService } from '../transaction/transaction.service';
-import { AppResponse } from '@common/appResponse.parser';
 import { TransactionType } from '@common/interface/main.interface';
 import { v4 as uuidv4 } from 'uuid';
 
@@ -33,7 +32,7 @@ export class WalletService {
         return release!;
     }
 
-    async initializeWallet(userId: string, balance: number) {
+    async initializeWallet(userId: string, balance: number): Promise<WalletI> {
         const wallet = await this.walletRepository.create({
             id: uuidv4(),
             userId,
@@ -52,35 +51,32 @@ export class WalletService {
         return wallet;
     }
 
-    async getBalance(userId: string) {
+    async getBalance(userId: string): Promise<BalanceResponseI> {
         const wallet = await this.walletRepository.findOne(w => w.userId === userId);
         if (!wallet) {
-            return AppResponse.error({
-                message: 'Wallet not found',
-                status: HttpStatus.NOT_FOUND,
-                location: 'WalletService.getBalance'
-            });
+            throw new NotFoundException('Wallet not found');
         }
 
-        return AppResponse.success('Balance fetched successfully', HttpStatus.OK, {
+        return {
             balance: wallet.balance
-        });
+        };
     }
 
-    async addBalance(userId: string, amount: number, idempotencyKey: string) {
+    async addBalance(userId: string, amount: number, idempotencyKey: string): Promise<MutationResponseI> {
         const release = await this.acquireLock(userId);
         try {
             // Idempotency check
             const existing = await this.transactionService.findByIdempotencyKey(userId, idempotencyKey);
             if (existing) {
                 const wallet = await this.walletRepository.findOne(w => w.userId === userId);
-                return AppResponse.success('Balance added successfully (idempotent)', HttpStatus.OK, {
-                    balance: wallet?.balance
-                });
+                return {
+                    balance: wallet?.balance || 0,
+                    isIdempotent: true
+                };
             }
 
             const wallet = await this.walletRepository.findOne(w => w.userId === userId);
-            if (!wallet) throw new Error('Wallet not found');
+            if (!wallet) throw new NotFoundException('Wallet not found');
 
             const newBalance = wallet.balance + amount;
             await this.walletRepository.update(wallet.id, {
@@ -97,28 +93,29 @@ export class WalletService {
                 idempotencyKey
             });
 
-            return AppResponse.success('Balance added successfully', HttpStatus.OK, {
+            return {
                 balance: newBalance
-            });
+            };
         } finally {
             release();
         }
     }
 
-    async withdraw(userId: string, amount: number, idempotencyKey: string) {
+    async withdraw(userId: string, amount: number, idempotencyKey: string): Promise<MutationResponseI> {
         const release = await this.acquireLock(userId);
         try {
             // Idempotency check
             const existing = await this.transactionService.findByIdempotencyKey(userId, idempotencyKey);
             if (existing) {
                 const wallet = await this.walletRepository.findOne(w => w.userId === userId);
-                return AppResponse.success('Withdrawal successful (idempotent)', HttpStatus.OK, {
-                    balance: wallet?.balance
-                });
+                return {
+                    balance: wallet?.balance || 0,
+                    isIdempotent: true
+                };
             }
 
             const wallet = await this.walletRepository.findOne(w => w.userId === userId);
-            if (!wallet) throw new Error('Wallet not found');
+            if (!wallet) throw new NotFoundException('Wallet not found');
 
             if (wallet.balance < amount) {
                 throw new BadRequestException('Insufficient balance');
@@ -139,9 +136,9 @@ export class WalletService {
                 idempotencyKey
             });
 
-            return AppResponse.success('Withdrawal successful', HttpStatus.OK, {
+            return {
                 balance: newBalance
-            });
+            };
         } finally {
             release();
         }

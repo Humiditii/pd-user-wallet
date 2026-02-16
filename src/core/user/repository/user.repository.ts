@@ -4,5 +4,5 @@ import { UserI } from '../interface/user.interface';
 
 @Injectable()
 export class UserRepository extends BaseRepository<UserI> {
-    // Memory storage is already in BaseRepository
+
 }

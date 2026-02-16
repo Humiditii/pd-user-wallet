@@ -4,3 +4,12 @@ export interface WalletI {
     balance: number
     updatedAt: Date
 }
+
+export interface BalanceResponseI {
+    balance: number;
+}
+
+export interface MutationResponseI {
+    balance: number;
+    isIdempotent?: boolean;
+}

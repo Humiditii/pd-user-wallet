@@ -6,10 +6,7 @@ import {
 } from '@nestjs/common';
 import { Observable, of } from 'rxjs';
 
-/**
- * A simple in-memory cache for idempotency.
- * In a real app, this should be in Redis with an expiry.
- */
+
 @Injectable()
 export class IdempotencyInterceptor implements NestInterceptor {
     private responses = new Map<string, { body: any, status: number }>();

@@ -1,15 +1,14 @@
-import { Injectable, HttpStatus } from '@nestjs/common';
+import { Injectable } from '@nestjs/common';
 import { TransactionRepository } from './repository/transaction.repository';
-import { TransactionI } from './interface/transaction.interface';
-import { TransactionType, FetchPropI } from '@common/interface/main.interface';
-import { AppResponse } from '@common/appResponse.parser';
+import { TransactionI, GetTransactionsResponseI } from './interface/transaction.interface';
+import { FetchPropI } from '@common/interface/main.interface';
 import { v4 as uuidv4 } from 'uuid';
 
 @Injectable()
 export class TransactionService {
     constructor(private readonly transactionRepository: TransactionRepository) { }
 
-    async record(data: Omit<TransactionI, 'id' | 'createdAt'>) {
+    async record(data: Omit<TransactionI, 'id' | 'createdAt'>): Promise<TransactionI> {
         return this.transactionRepository.create({
             id: uuidv4(),
             ...data,
@@ -17,22 +16,22 @@ export class TransactionService {
         });
     }
 
-    async findByIdempotencyKey(userId: string, key: string) {
+    async findByIdempotencyKey(userId: string, key: string): Promise<TransactionI | null> {
         return this.transactionRepository.findOne(t => t.userId === userId && t.idempotencyKey === key);
     }
 
-    async getTransactions(userId: string, fetchProp: FetchPropI) {
+    async getTransactions(userId: string, fetchProp: FetchPropI): Promise<GetTransactionsResponseI> {
         const { documents, count } = await this.transactionRepository.search(
             t => t.userId === userId,
             fetchProp,
             (a, b) => b.createdAt.getTime() - a.createdAt.getTime()
         );
 
-        return AppResponse.success('Transactions fetched successfully', HttpStatus.OK, {
+        return {
             transactions: documents,
             count,
             page: fetchProp.page || 1,
             limit: fetchProp.limit || 10
-        });
+        };
     }
 }

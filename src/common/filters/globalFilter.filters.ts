@@ -48,10 +48,6 @@ export class AllGlobalExceptionsFilter implements ExceptionFilter {
             path: request.url,
         };
 
-        // Assessment requirement: No stack traces in production
-        // For this assessment, we'll assume "production" unless specified otherwise,
-        // or just generally omit it to follow requirements.
-
         response.status(status).json(errorResponse);
     }
 }
